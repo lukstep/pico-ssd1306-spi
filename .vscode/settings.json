@@ -1,0 +1,32 @@
+{
+    "C_Cpp.intelliSenseEngine": "disabled",
+    // "clangd.path": "/usr/bin/clangd",
+    "clangd.checkUpdates": true,
+    "clangd.restartAfterCrash": true,
+    "clangd.detectExtensionConflicts": true,
+    "clangd.arguments": [
+        "-log=verbose",
+        "-pretty",
+        "--background-index",
+        "--query-driver=/opt/riscv/gcc14-rp2350-no-zcmp/bin/riscv32-unknown-elf-gcc,/opt/riscv/gcc14-rp2350-no-zcmp/bin/riscv32-unknown-elf-g++,/usr/bin/arm-none-eabi-gcc,/usr/bin/arm-none-eabi-g++",
+        "--compile-commands-dir=${workspaceFolder}/build"
+    ],
+    "editor.formatOnSave": true,
+    "C_Cpp.formatting": "clangFormat",
+    "C_Cpp.clang_format_path": "/workspaces/pico-dev-container/.clang-format",
+    "C_Cpp.clang_format_sortIncludes": true,
+    "cmake.configureOnOpen": true,
+    "cmake.enableAutomaticKitScan": false,
+    "cmake.launchBehavior": "breakAndReuseTerminal",
+    "cmake.buildTask": true,
+    "cmake.pinnedCommands": [
+        "workbench.action.tasks.configureTaskRunner",
+        "workbench.action.tasks.runTask",
+        "cmake.buildWithTarget",
+        "cmake.setVariant"
+    ],
+    "cmake.environment": {
+        "CLICOLOR_FORCE": "1"
+    },
+    "editor.renderWhitespace": "all",
+}
