@@ -9,12 +9,12 @@
 #include <math.h>
 
 #include "font5x7.hpp"
-#include "sdd1306_hw_driver.hpp"
+#include "ssd1306_hw_driver.hpp"
 
 namespace SSD1306
 {
 
-template<int32_t WIDTH, int32_t HEIGHT, bool INVERTED = false>
+template<int32_t WIDTH, int32_t HEIGHT, bool FLIP_DIRECTION = false, bool INVERTED = false>
 class OledDisplay
 {
   private:
@@ -29,7 +29,7 @@ class OledDisplay
     static constexpr uint8_t SSD1306_CHARGEPUMP = 0x8D;
     static constexpr uint8_t SSD1306_MEMORYMODE = 0x20;
     static constexpr uint8_t SSD1306_SEGREMAP = 0xA0;
-    static constexpr uint8_t SSD1306_COMSCANDEC = 0xC8;
+    static constexpr uint8_t SSD1306_COMSCANDEC = 0xC0;
     static constexpr uint8_t SSD1306_SETCOMPINS = 0xDA;
     static constexpr uint8_t SSD1306_SETCONTRAST = 0x81;
     static constexpr uint8_t SSD1306_SETPRECHARGE = 0xD9;
@@ -45,6 +45,12 @@ class OledDisplay
         PAGE = 0x02
     };
 
+    enum class SCAN_DIRECTION
+    {
+        NORMAL = 0x00,
+        FLIPPED = 0x08
+    };
+
   public:
     OledDisplay()
     {
@@ -58,6 +64,19 @@ class OledDisplay
 
         uint8_t mode = INVERTED ? SSD1306_INVERTDISPLAY : SSD1306_NORMALDISPLAY;
 
+        uint8_t segremapValue = 0x00;
+        uint8_t scanDirection = 0x00;
+        if constexpr(FLIP_DIRECTION)
+        {
+            segremapValue = SSD1306_SEGREMAP | 0x0;
+            scanDirection = SSD1306_COMSCANDEC | static_cast<uint8_t>(SCAN_DIRECTION::NORMAL);
+        }
+        else
+        {
+            segremapValue = SSD1306_SEGREMAP | 0x1;
+            scanDirection = SSD1306_COMSCANDEC | static_cast<uint8_t>(SCAN_DIRECTION::FLIPPED);
+        }
+
         uint8_t commands[] = {SSD1306_DISPLAYOFF,
                               SSD1306_SETDISPLAYCLOCKDIV,
                               0x80,
@@ -70,8 +89,8 @@ class OledDisplay
                               0x14,
                               SSD1306_MEMORYMODE,
                               static_cast<uint8_t>(MEMORY_ADDRESSING_MODE::HORIZONTAL),
-                              static_cast<uint8_t>(SSD1306_SEGREMAP | 0x1),
-                              SSD1306_COMSCANDEC,
+                              segremapValue,
+                              scanDirection,
                               SSD1306_SETCOMPINS,
                               0x12,
                               SSD1306_SETCONTRAST,
