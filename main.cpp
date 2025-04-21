@@ -6,7 +6,7 @@
 int main()
 {
     stdio_init_all();
-    SSD1306<128, 64> display;
+    SSD1306::OledDisplay<128, 64> display;
 
     char text[20];
     while(true)
@@ -24,7 +24,5 @@ int main()
             display.display();
             sleep_ms(500);
         }
-        display.display();
-        sleep_ms(500);
     }
 }

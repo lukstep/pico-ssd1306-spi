@@ -1,7 +1,5 @@
 #pragma once
 
-#include "hardware/spi.h"
-#include "hardware/gpio.h"
 #include <boards/pico_w.h>
 #include <cstdint>
 #include <pico/types.h>
@@ -11,47 +9,54 @@
 #include <math.h>
 
 #include "font5x7.hpp"
+#include "sdd1306_hw_driver.hpp"
 
-constexpr uint8_t SSD1306_COLUMNADDR = 0x21;
-constexpr uint8_t SSD1306_PAGEADDR = 0x22;
-constexpr uint8_t SSD1306_DISPLAYOFF = 0xAE;
-constexpr uint8_t SSD1306_DISPLAYON = 0xAF;
-constexpr uint8_t SSD1306_SETDISPLAYCLOCKDIV = 0xD5;
-constexpr uint8_t SSD1306_SETMULTIPLEX = 0xA8;
-constexpr uint8_t SSD1306_SETDISPLAYOFFSET = 0xD3;
-constexpr uint8_t SSD1306_SETSTARTLINE = 0x40;
-constexpr uint8_t SSD1306_CHARGEPUMP = 0x8D;
-constexpr uint8_t SSD1306_MEMORYMODE = 0x20;
-constexpr uint8_t SSD1306_SEGREMAP = 0xA0;
-constexpr uint8_t SSD1306_COMSCANDEC = 0xC8;
-constexpr uint8_t SSD1306_SETCOMPINS = 0xDA;
-constexpr uint8_t SSD1306_SETCONTRAST = 0x81;
-constexpr uint8_t SSD1306_SETPRECHARGE = 0xD9;
-constexpr uint8_t SSD1306_SETVCOMDETECT = 0xDB;
-constexpr uint8_t SSD1306_DISPLAYALLON_RESUME = 0xA4;
-constexpr uint8_t SSD1306_NORMALDISPLAY = 0xA6;
+namespace SSD1306
+{
 
-template<int32_t WIDTH, int32_t HEIGHT>
-class SSD1306
+template<int32_t WIDTH, int32_t HEIGHT, bool INVERTED = false>
+class OledDisplay
 {
   private:
-    static constexpr uint8_t FONT_WIDTH = 5;
-    static constexpr uint8_t FONT_HEIGHT = 7;
-    static constexpr uint8_t CHARACTER_SPACE = 1;
+    static constexpr uint8_t SSD1306_COLUMNADDR = 0x21;
+    static constexpr uint8_t SSD1306_PAGEADDR = 0x22;
+    static constexpr uint8_t SSD1306_DISPLAYOFF = 0xAE;
+    static constexpr uint8_t SSD1306_DISPLAYON = 0xAF;
+    static constexpr uint8_t SSD1306_SETDISPLAYCLOCKDIV = 0xD5;
+    static constexpr uint8_t SSD1306_SETMULTIPLEX = 0xA8;
+    static constexpr uint8_t SSD1306_SETDISPLAYOFFSET = 0xD3;
+    static constexpr uint8_t SSD1306_SETSTARTLINE = 0x40;
+    static constexpr uint8_t SSD1306_CHARGEPUMP = 0x8D;
+    static constexpr uint8_t SSD1306_MEMORYMODE = 0x20;
+    static constexpr uint8_t SSD1306_SEGREMAP = 0xA0;
+    static constexpr uint8_t SSD1306_COMSCANDEC = 0xC8;
+    static constexpr uint8_t SSD1306_SETCOMPINS = 0xDA;
+    static constexpr uint8_t SSD1306_SETCONTRAST = 0x81;
+    static constexpr uint8_t SSD1306_SETPRECHARGE = 0xD9;
+    static constexpr uint8_t SSD1306_SETVCOMDETECT = 0xDB;
+    static constexpr uint8_t SSD1306_DISPLAYALLON_RESUME = 0xA4;
+    static constexpr uint8_t SSD1306_NORMALDISPLAY = 0xA6;
+    static constexpr uint8_t SSD1306_INVERTDISPLAY = 0xA7;
+
+    enum class MEMORY_ADDRESSING_MODE
+    {
+        HORIZONTAL = 0x00,
+        VERTICAL = 0x01,
+        PAGE = 0x02
+    };
 
   public:
-    SSD1306()
+    OledDisplay()
     {
         static_assert(WIDTH > 0 && WIDTH % 8 == 0, "Width must be a multiple of 8");
         static_assert(HEIGHT > 0 && HEIGHT % 8 == 0, "Height must be a multiple of 8");
 
-        spiInitialization();
+        hwInterface.initialize();
         clear();
 
-        gpio_put(RST_PIN, 0);
-        sleep_ms(10);
-        gpio_put(RST_PIN, 1);
-        sleep_ms(10);
+        hwInterface.reset();
+
+        uint8_t mode = INVERTED ? SSD1306_INVERTDISPLAY : SSD1306_NORMALDISPLAY;
 
         uint8_t commands[] = {SSD1306_DISPLAYOFF,
                               SSD1306_SETDISPLAYCLOCKDIV,
@@ -64,21 +69,21 @@ class SSD1306
                               SSD1306_CHARGEPUMP,
                               0x14,
                               SSD1306_MEMORYMODE,
-                              0x00,
+                              static_cast<uint8_t>(MEMORY_ADDRESSING_MODE::HORIZONTAL),
                               static_cast<uint8_t>(SSD1306_SEGREMAP | 0x1),
                               SSD1306_COMSCANDEC,
                               SSD1306_SETCOMPINS,
                               0x12,
                               SSD1306_SETCONTRAST,
-                              0xCF,
+                              0x00,
                               SSD1306_SETPRECHARGE,
                               0xF1,
                               SSD1306_SETVCOMDETECT,
                               0x40,
                               SSD1306_DISPLAYALLON_RESUME,
-                              SSD1306_NORMALDISPLAY,
+                              mode,
                               SSD1306_DISPLAYON};
-        sendCommands(commands, sizeof(commands));
+        hwInterface.sendCommands(commands, sizeof(commands));
     }
 
     void clear()
@@ -86,25 +91,12 @@ class SSD1306
         memset(buffer, 0x00, sizeof(buffer));
     }
 
-    // void display()
-    // {
-    //     for (uint8_t page = 0; page < (HEIGHT / 8); ++page) {
-    //         uint8_t commands[] = {
-    //             SSD1306_PAGEADDR, page, page,
-    //             SSD1306_COLUMNADDR, 0x00, static_cast<uint8_t>(WIDTH - 1)
-    //         };
-    //         sendCommands(commands, sizeof(commands));
-
-    //         sendDataBulk(&buffer[page * WIDTH], WIDTH);
-    //     }
-    // }
-
     void display()
     {
         uint8_t commands[] = {SSD1306_COLUMNADDR, 0x00, static_cast<uint8_t>(WIDTH - 1),
                               SSD1306_PAGEADDR,   0x00, static_cast<uint8_t>((HEIGHT / 8) - 1)};
-        sendCommands(commands, sizeof(commands));
-        sendDataBulk(buffer, sizeof(buffer));
+        hwInterface.sendCommands(commands, sizeof(commands));
+        hwInterface.sendDataBulk(buffer, sizeof(buffer));
     }
 
     constexpr int32_t bufferSize() const
@@ -287,94 +279,7 @@ class SSD1306
     }
 
   private:
-    static constexpr int32_t CS_PIN = PICO_DEFAULT_SPI_CSN_PIN;
-    static constexpr int32_t CLK_PIN = PICO_DEFAULT_SPI_SCK_PIN;
-    static constexpr int32_t SDI_PIN = PICO_DEFAULT_SPI_TX_PIN;
-    static constexpr int32_t SDO_PIN = PICO_DEFAULT_SPI_RX_PIN;
-    static constexpr int32_t DC_PIN = 20;
-    static constexpr int32_t RST_PIN = 21;
+    SSD1306::HardwareInterfaceBase& hwInterface = *new SSD1306::SPIInterface();
     uint8_t buffer[WIDTH * HEIGHT / 8];
-
-    void spiInitialization() const
-    {
-        gpio_init(CS_PIN);
-        gpio_set_dir(CS_PIN, GPIO_OUT);
-        csDeselect();
-
-        spi_init(spi_default, 10'000'000);
-
-        gpio_set_function(CLK_PIN, GPIO_FUNC_SPI);
-        gpio_set_function(SDI_PIN, GPIO_FUNC_SPI);
-        gpio_set_function(SDO_PIN, GPIO_FUNC_SPI);
-
-        gpio_init(DC_PIN);
-        gpio_set_dir(DC_PIN, GPIO_OUT);
-
-        gpio_init(RST_PIN);
-        gpio_set_dir(RST_PIN, GPIO_OUT);
-    }
-
-    inline void csSelect() const
-    {
-        asm volatile("nop \n nop \n nop \n nop");
-        gpio_put(CS_PIN, 0); // Active low
-        asm volatile("nop \n nop \n nop \n nop");
-    }
-
-    inline void csDeselect() const
-    {
-        asm volatile("nop \n nop \n nop \n nop");
-        gpio_put(CS_PIN, 1);
-        asm volatile("nop \n nop \n nop \n nop");
-    }
-
-    inline void dataTransfer() const
-    {
-        gpio_put(DC_PIN, 1);
-        sleep_us(1);
-    }
-
-    inline void commandTransfer() const
-    {
-        gpio_put(DC_PIN, 0);
-        sleep_us(1);
-    }
-
-    inline void spiWrite(uint8_t* data) const
-    {
-        csSelect();
-        spi_write_blocking(spi_default, data, 1);
-        csDeselect();
-    }
-
-    inline void spiBulkWrite(uint8_t* data, size_t size) const
-    {
-        csSelect();
-        spi_write_blocking(spi_default, data, size);
-        csDeselect();
-    }
-
-    inline void sendCommand(uint8_t command) const
-    {
-        commandTransfer();
-        spiWrite(&command);
-    }
-
-    inline void sendCommands(uint8_t* commands, size_t size) const
-    {
-        commandTransfer();
-        spiBulkWrite(commands, size);
-    }
-
-    inline void sendData(uint8_t data) const
-    {
-        dataTransfer();
-        spiWrite(&data);
-    }
-
-    inline void sendDataBulk(uint8_t* data, size_t size) const
-    {
-        dataTransfer();
-        spiBulkWrite(data, size);
-    }
 };
+} // namespace SSD1306

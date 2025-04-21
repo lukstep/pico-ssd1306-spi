@@ -1,4 +1,9 @@
 #pragma once
+#include <cstdint>
+
+constexpr uint8_t FONT_WIDTH = 5;
+constexpr uint8_t FONT_HEIGHT = 7;
+constexpr uint8_t CHARACTER_SPACE = 1;
 
 // clang-format off
 static constexpr uint8_t ssd1306_font5x7[] = {
