@@ -7,6 +7,7 @@
 #include <cstring>
 #include <sys/cdefs.h>
 #include <math.h>
+#include <string>
 
 #include "font5x7.hpp"
 #include "ssd1306_hw_driver.hpp"
@@ -116,11 +117,6 @@ class OledDisplay
                               SSD1306_PAGEADDR,   0x00, static_cast<uint8_t>((HEIGHT / 8) - 1)};
         hwInterface.sendCommands(commands, sizeof(commands));
         hwInterface.sendDataBulk(buffer, sizeof(buffer));
-    }
-
-    constexpr int32_t bufferSize() const
-    {
-        return WIDTH * HEIGHT / 8;
     }
 
     __always_inline void drawPixel(int32_t x, int32_t y)
@@ -236,6 +232,7 @@ class OledDisplay
             {
                 swap(ax, bx);
             }
+
             for(int32_t j = ax; j <= bx; j++)
             {
                 drawPixel(j, y0 + i);
@@ -288,12 +285,45 @@ class OledDisplay
         }
     }
 
-    void drawText(int32_t x, int32_t y, const char* text)
+    template<typename StringType>
+    void drawText(int32_t x, int32_t y, const StringType& text)
     {
-        while(*text)
+        for(auto c: text)
         {
-            drawChar(x, y, *text++);
+            drawChar(x, y, c);
             x += FONT_WIDTH + CHARACTER_SPACE;
+        }
+    }
+
+    void drawBitmap(int x, int y, const uint8_t* bitmap, int w, int h)
+    {
+        for(int j = 0; j < h; j++)
+        {
+            for(int i = 0; i < w; i++)
+            {
+                int byteIndex = i + (j / 8) * w;
+                if(bitmap[byteIndex] & (1 << (j % 8)))
+                {
+                    drawPixel(x + i, y + j);
+                }
+            }
+        }
+    }
+
+    void drawBitmapHorizontal(int x0, int y0, const uint8_t* bitmap, int width, int height)
+    {
+        int bytesPerRow = (width + 7) / 8;
+
+        for(int y = 0; y < height; y++)
+        {
+            for(int x = 0; x < width; x++)
+            {
+                int byteIndex = y * bytesPerRow + (x / 8);
+                uint8_t bit = bitmap[byteIndex] & (0x80 >> (x % 8));
+
+                if(bit)
+                    drawPixel(x0 + x, y0 + y);
+            }
         }
     }
 

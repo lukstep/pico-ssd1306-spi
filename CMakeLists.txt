@@ -7,31 +7,22 @@ set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 include($ENV{PICO_SDK_PATH}/pico_sdk_init.cmake)
 
-project(oled C CXX ASM)
+set(LIB_NAME "ssd1306")
+
+project(${LIB_NAME} C CXX ASM)
 
 pico_sdk_init()
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+add_library(${LIB_NAME} STATIC src/ssd1306.cpp src/ssd1306_hw_driver.cpp)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -Wall -Wextra -Wpedantic -Wswitch -Wshadow")
-message(STATUS "CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}")
-
-add_executable(${CMAKE_PROJECT_NAME} main.cpp)
-
-pico_enable_stdio_usb(${CMAKE_PROJECT_NAME} 1)
-pico_enable_stdio_uart(${CMAKE_PROJECT_NAME} 1)
-pico_add_extra_outputs(${CMAKE_PROJECT_NAME})
-
-target_link_libraries(${CMAKE_PROJECT_NAME} pico_stdlib hardware_spi)
-
-# Dispaly size od the ELF sectionsś
-set(CMAKE_SIZE arm-none-eabi-size)
-add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_SIZE} --format=gnu --radix=10 $<TARGET_FILE:${CMAKE_PROJECT_NAME}>
-    COMMENT "Displaying section sizes of the ELF file..."
+target_include_directories(${LIB_NAME} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-# Export path to project executable to file. File is used in vscode tasks (task.json and launch.json)
-set(ELF_PATH "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_FILE}${CMAKE_PROJECT_NAME}.elf")
-file(WRITE "${CMAKE_BINARY_DIR}/elf_path.txt" "${ELF_PATH}\n")
+target_link_libraries(${LIB_NAME} PUBLIC pico_stdlib hardware_spi)
+
+option(BUILD_EXAMPLES "Build example programs" OFF)
+
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()

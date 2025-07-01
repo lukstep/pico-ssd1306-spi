@@ -1,10 +1,9 @@
 #pragma once
 
-#include "hardware/gpio.h"
-#include <boards/pico_w.h>
-#include <hardware/spi.h>
+#include <pico/stdlib.h>
 #include <pico/types.h>
-#include <sys/cdefs.h>
+#include <hardware/gpio.h>
+#include <hardware/spi.h>
 
 namespace SSD1306
 {
@@ -25,25 +24,7 @@ class HardwareInterfaceBase
 class SPIInterface : public HardwareInterfaceBase
 {
   public:
-    void initialize() override
-    {
-        gpio_init(CS_PIN);
-        gpio_set_dir(CS_PIN, GPIO_OUT);
-        csDeselect();
-
-        constexpr int32_t SPI_BAUDRATE = 10'000'000;
-        spi_init(spi_default, SPI_BAUDRATE);
-
-        gpio_set_function(CLK_PIN, GPIO_FUNC_SPI);
-        gpio_set_function(SDI_PIN, GPIO_FUNC_SPI);
-        gpio_set_function(SDO_PIN, GPIO_FUNC_SPI);
-
-        gpio_init(DC_PIN);
-        gpio_set_dir(DC_PIN, GPIO_OUT);
-
-        gpio_init(RST_PIN);
-        gpio_set_dir(RST_PIN, GPIO_OUT);
-    }
+    void initialize() override;
 
     inline void sendCommand(uint8_t command) const
     {
