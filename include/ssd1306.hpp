@@ -106,6 +106,16 @@ class OledDisplay
         hwInterface.sendCommands(commands, sizeof(commands));
     }
 
+    constexpr int32_t width() const
+    {
+        return WIDTH;
+    }
+
+    constexpr int32_t height() const
+    {
+        return HEIGHT;
+    }
+
     void clear()
     {
         memset(buffer, 0x00, sizeof(buffer));

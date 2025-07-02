@@ -1,9 +1,8 @@
 #include <cstdio>
+#include <cstring>
 #include <pico/stdio.h>
 #include <pico/time.h>
 #include "ssd1306.hpp"
-
-#include <string>
 
 int32_t getFPS()
 {
@@ -13,6 +12,19 @@ int32_t getFPS()
     return round(1000.0f / (static_cast<float>(ms) - (static_cast<float>(ms_last))));
 }
 
+template<int32_t X, int32_t Y>
+void drawProgressBar(SSD1306::OledDisplay<128, 64, true>& display, int32_t proc)
+{
+    constexpr int32_t CHARACTER_SPACE = 2;
+    int32_t barWidth = display.width() - 2 * (X + CHARACTER_SPACE * 2);
+    int32_t barHeight = 20;
+    int32_t barPorcWidth = (barWidth * proc) / 100;
+
+    display.drawRect(X, Y, display.width() - 2 * X, barHeight);
+    display.fillRect(X + CHARACTER_SPACE, Y + CHARACTER_SPACE, barPorcWidth,
+                     barHeight - 2 * CHARACTER_SPACE);
+}
+
 int main()
 {
     stdio_init_all();
@@ -20,19 +32,28 @@ int main()
     SSD1306::OledDisplay<128, 64, true> display;
     int32_t fps = 0;
 
+    int32_t proc = 0;
+    char text[20];
+
+    memset(text, 0, sizeof(text));
     while(true)
     {
         display.clear();
         fps = getFPS();
-        std::string fps_text = "FPS: " + std::to_string(fps);
-        display.drawText(0, 10, fps_text);
-        display.drawText(100, 5, "XYY");
-        display.drawText(5, 57, "YYY");
-        display.drawLine(5, 63, 120, 5);
-        display.drawRect(15, 50, 10, 10);
-        display.fillRect(100, 32, 30, 10);
-        display.drawCircle(64, 32, 5);
-        display.fillTriangle(70, 50, 80, 50, 75, 40);
+
+        display.drawText(40, 5, "Loading...");
+        drawProgressBar<10, 20>(display, proc);
+
+        snprintf(text, sizeof(text), "%d%%   ", proc);
+        display.drawText(56, 42, text);
+
+        proc += 1;
+        if(proc > 100)
+        {
+            proc = 0;
+        }
+
+        sleep_us(100000);
         display.display();
     }
 }
