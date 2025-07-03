@@ -9,7 +9,8 @@
 #include <math.h>
 #include <string>
 
-#include "font5x7.hpp"
+#include "fonts.hpp"
+
 #include "ssd1306_hw_driver.hpp"
 
 namespace SSD1306
@@ -51,6 +52,29 @@ class OledDisplay
         NORMAL = 0x00,
         FLIPPED = 0x08
     };
+
+    void drawChar(int32_t x, int32_t y, char c, FontBase* fontData)
+    {
+        if(c < 0 || c > 255)
+        {
+            return;
+        }
+
+        uint16_t index = (c - fontData->characterOffset()) * fontData->width();
+
+        for(int32_t i = 0; i < fontData->width(); ++i)
+        {
+            uint8_t col = fontData->getFontData()[index + i];
+
+            for(int32_t j = 0; j < fontData->height(); ++j)
+            {
+                if(col & (1 << j))
+                {
+                    drawPixel(x + i, y + j);
+                }
+            }
+        }
+    }
 
   public:
     OledDisplay()
@@ -138,27 +162,10 @@ class OledDisplay
         buffer[x + ((y >> 3) * WIDTH)] |= 1 << (y & 7);
     }
 
-    void drawChar(int32_t x, int32_t y, char c)
+    void drawChar(int32_t x, int32_t y, char c, Fonts::FontType font = Fonts::FontType::FONT5X8)
     {
-        if(c < 0 || c > 255)
-        {
-            return;
-        }
-
-        uint16_t index = c * FONT_WIDTH;
-
-        for(int32_t i = 0; i < FONT_WIDTH; ++i)
-        {
-            uint8_t col = ssd1306_font5x7[index + i];
-
-            for(int32_t j = 0; j < 8; ++j)
-            {
-                if(col & (1 << j))
-                {
-                    drawPixel(x + i, y + j);
-                }
-            }
-        }
+        auto fontData = getFont(font);
+        drawChar(x, y, c, fontData);
     }
 
     void drawLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1)
@@ -296,12 +303,18 @@ class OledDisplay
     }
 
     template<typename StringType>
-    void drawText(int32_t x, int32_t y, const StringType& text)
+    void drawText(int32_t x, int32_t y, const StringType& text,
+                  Fonts::FontType font = Fonts::FontType::FONT5X8)
     {
+        auto fontData = getFont(font);
         for(auto c: text)
         {
-            drawChar(x, y, c);
-            x += FONT_WIDTH + CHARACTER_SPACE;
+            if(c == '\0')
+            {
+                break;
+            }
+            drawChar(x, y, c, fontData);
+            x += fontData->width() + fontData->characterSpace();
         }
     }
 

@@ -1,9 +1,5 @@
 #pragma once
-#include <cstdint>
-
-constexpr uint8_t FONT_WIDTH = 5;
-constexpr uint8_t FONT_HEIGHT = 7;
-constexpr uint8_t CHARACTER_SPACE = 1;
+#include "font_base.hpp"
 
 // clang-format off
 static constexpr uint8_t ssd1306_font5x7[] = {
@@ -265,3 +261,34 @@ static constexpr uint8_t ssd1306_font5x7[] = {
     0x00, 0x00, 0x00, 0x00, 0x00  // #255 NBSP
 };
 // clang-format on
+
+class Font5x7 : public FontBase
+{
+  public:
+    uint8_t width() const override
+    {
+        return 5;
+    }
+
+    uint8_t height() const override
+    {
+        return 7;
+    }
+
+    uint8_t characterSpace() const override
+    {
+        return 1;
+    }
+
+    uint8_t characterOffset() const override
+    {
+        return 0;
+    }
+
+    const uint8_t* getFontData() const override
+    {
+        return ssd1306_font5x7;
+    }
+};
+
+inline Font5x7 font5x7;
