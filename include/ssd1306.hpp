@@ -318,6 +318,27 @@ class OledDisplay
         }
     }
 
+    template<typename StringType>
+    void drawTextWithWrap(int32_t x, int32_t y, const StringType& text,
+                          Fonts::FontType font = Fonts::FontType::FONT5X8)
+    {
+        auto fontData = getFont(font);
+        for(auto c: text)
+        {
+            if(c == '\0')
+            {
+                break;
+            }
+            drawChar(x, y, c, fontData);
+            x += fontData->width() + fontData->characterSpace();
+            if(x + fontData->width() > WIDTH)
+            {
+                x = 0;
+                y += fontData->height() + 1;
+            }
+        }
+    }
+
     void drawBitmap(int x, int y, const uint8_t* bitmap, int w, int h)
     {
         for(int j = 0; j < h; j++)

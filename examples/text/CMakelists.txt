@@ -1,0 +1,10 @@
+add_executable(text
+    main.cpp
+)
+
+target_link_libraries(text
+    pico_stdlib
+    ssd1306
+)
+
+pico_add_extra_outputs(text)
